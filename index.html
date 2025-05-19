@@ -7,13 +7,19 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="script.js" defer></script>
   <link rel="stylesheet" href="style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>Report attività editoriale mensile</h1>
     <div class="upload-section">
       <label for="fileInput">Carica file Excel:</label>
-      <input type="file" id="fileInput" accept=".xlsx" />
+      <input type="file" id="fileInput" style="margin-bottom:10px;"><br><br>
+    <label style="font-weight:bold;">Calcola numero post editoriali</label><br>
+    <input type="file" id="csvFileInput" accept=".csv" style="margin-top: 8px;">
+    <button onclick="calcolaPost()" style="margin-left: 10px; padding: 6px 12px; background-color: #0033a0; color: white; border: none; border-radius: 4px;">Calcola</button>
+    <div id="outputCalcolo" style="margin-top: 10px; font-weight: bold; color: #333; white-space: pre-line;"></div><br><br
+ accept=".xlsx" />
     </div>
     <div class="date-section">
       <label for="startDate">Data iniziale (gg/mm/aa):</label>

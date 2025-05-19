@@ -125,3 +125,52 @@ function esportaCSVFormattato() {
   XLSX.utils.book_append_sheet(wb, ws, "Report");
   XLSX.writeFile(wb, "report_editoriale_formattato.csv");
 }
+
+function calcolaPost() {
+  const fileInput = document.getElementById('csvFileInput');
+  const output = document.getElementById('outputCalcolo');
+
+  if (!fileInput.files.length) {
+    output.textContent = "⚠️ Seleziona un file CSV.";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const text = e.target.result;
+    const rows = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
+
+    const canaliMap = {
+      'Facebook': ['facebook', 'facebook postepay', 'facebook postemobile'],
+      'Linkedin': ['linkedin'],
+      'Instagram': ['instagram', 'instagram postepay', 'instagram postemobile'],
+      'X': ['twitter'],
+      'YouTube': ['youtube']
+    };
+
+    const conteggio = { Facebook: 0, Linkedin: 0, Instagram: 0, X: 0, YouTube: 0 };
+    let totale = 0;
+
+    rows.forEach(row => {
+      const campagna = (row['Campagna'] || '').toLowerCase().trim();
+      const canale = (row['Canale'] || '').toLowerCase().trim();
+      if (campagna === 'editoriale') {
+        totale++;
+        for (const [nome, alias] of Object.entries(canaliMap)) {
+          if (alias.includes(canale)) {
+            conteggio[nome]++;
+          }
+        }
+      }
+    });
+
+    output.textContent = `Complessivamente sono stati esaminati ${totale} post editoriali: ` +
+      `${conteggio.Facebook} post Facebook, ` +
+      `${conteggio.Linkedin} post Linkedin, ` +
+      `${conteggio.Instagram} post Instagram, ` +
+      `${conteggio.X} post X (Twitter), ` +
+      `${conteggio.YouTube} video YouTube.`;
+  };
+
+  reader.readAsText(fileInput.files[0]);
+}
