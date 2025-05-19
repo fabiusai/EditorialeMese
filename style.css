@@ -1,11 +1,10 @@
-
+/* Stili base già presenti */
 body {
   font-family: Arial, sans-serif;
   background-color: #f7f7f7;
   margin: 0;
   padding: 0;
 }
-
 .container {
   max-width: 800px;
   margin: 50px auto;
@@ -14,65 +13,34 @@ body {
   padding: 30px;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
+/* ... altri stili rimangono invariati ... */
 
-h1 {
-  color: #003DA5;
-  text-align: center;
+/* Contenitore armonico per l’app esterna */
+.external-app-container {
+  max-width: 800px;           /* ora uguale alla larghezza della .container */
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-.upload-section, .date-section {
-  margin: 20px 0;
-}
-
-label {
-  display: block;
-  margin: 10px 0 5px;
-  font-weight: bold;
-}
-
-input[type="file"],
-input[type="date"] {
-  padding: 8px;
+/* Wrapper interno per controllare proporzioni iframe */
+.external-app-frame {
+  position: relative;
   width: 100%;
-  max-width: 300px;
+  padding-bottom: 40%;     /* altezza ridotta rispetto al 16:9 originale */
+  overflow: hidden;
+  border-radius: 6px;
 }
 
-button {
-  background-color: #003DA5;
-  color: #edd430;
+/* Stili dell’iframe vero e proprio */
+.external-app-frame iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   border: none;
-  padding: 12px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  display: block;
-  margin: 20px auto;
 }
-
-button:hover {
-  background-color: #002a73;
-}
-
-
-.button-row {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  flex-wrap: wrap;
-}
-.button-row button {
-  padding: 8px 12px;
-  font-weight: bold;
-}
-
-
-  <!-- EMBED APPLICAZIONE ESTERNA -->
-  <div class="external-app-embed">
-    <iframe
-      src="https://excelformat.onrender.com/"
-      width="100%"
-      height="600"
-      frameborder="0"
-      loading="lazy"
-    ></iframe>
-  </div>
-</body>
