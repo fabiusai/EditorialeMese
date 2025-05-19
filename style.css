@@ -1,5 +1,3 @@
-/* ───────────────────────────────────────────── */
-/*  Stili base generali                        */
 body {
   font-family: Arial, sans-serif;
   background-color: #f7f7f7;
@@ -57,25 +55,24 @@ body {
   min-height: 50px;
 }
 
-/* ───────────────────────────────────────────── */
-/*  Contenitore armonico per l’app esterna      */
+/* Contenitore armonico per l’app esterna */
 .external-app-container {
-  max-width: 800px;           /* uguale alla larghezza della .container */
-  margin: 40px auto;          /* centrato orizzontalmente */
-  padding: 20px;              /* spazio interno */
-  background-color: #fafafa;  /* sfondo tenue */
-  border: 1px solid #ddd;     /* bordo sottile */
-  border-radius: 8px;         /* angoli arrotondati */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);  /* ombra soft */
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
 /* Wrapper interno per controllare proporzioni iframe */
 .external-app-frame {
   position: relative;
   width: 100%;
-  padding-bottom: 40%;    /* aspect ratio ridotto */
+  padding-bottom: 56.25%; /* rapporto 16:9 */
   overflow: hidden;
-  border-radius: 6px;     /* arrotonda anche l’iframe */
+  border-radius: 6px;
 }
 
 /* Stili dell’iframe vero e proprio */
@@ -87,4 +84,3 @@ body {
   height: 100%;
   border: none;
 }
-
