@@ -1,10 +1,12 @@
-/* Stili base già presenti */
+/* ───────────────────────────────────────────── */
+/*  Stili base generali                        */
 body {
   font-family: Arial, sans-serif;
   background-color: #f7f7f7;
   margin: 0;
   padding: 0;
 }
+
 .container {
   max-width: 800px;
   margin: 50px auto;
@@ -13,26 +15,67 @@ body {
   padding: 30px;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
-/* ... altri stili rimangono invariati ... */
 
-/* Contenitore armonico per l’app esterna */
+.upload-section,
+.date-section,
+.campaign-section {
+  margin-bottom: 20px;
+}
+
+.upload-section label,
+.date-section label,
+.campaign-section label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.button-row {
+  margin-top: 20px;
+}
+
+.button-row button {
+  margin-right: 10px;
+  padding: 10px 15px;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  background-color: #edd430;
+}
+
+.button-row button:hover {
+  opacity: 0.9;
+}
+
+#output {
+  margin-top: 20px;
+  white-space: pre-wrap;
+  background-color: #f0f0f0;
+  padding: 15px;
+  border-radius: 4px;
+  min-height: 50px;
+}
+
+/* ───────────────────────────────────────────── */
+/*  Contenitore armonico per l’app esterna      */
 .external-app-container {
-  max-width: 800px;           /* ora uguale alla larghezza della .container */
-  margin: 40px auto;
-  padding: 20px;
-  background-color: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  max-width: 800px;           /* uguale alla larghezza della .container */
+  margin: 40px auto;          /* centrato orizzontalmente */
+  padding: 20px;              /* spazio interno */
+  background-color: #fafafa;  /* sfondo tenue */
+  border: 1px solid #ddd;     /* bordo sottile */
+  border-radius: 8px;         /* angoli arrotondati */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);  /* ombra soft */
 }
 
 /* Wrapper interno per controllare proporzioni iframe */
 .external-app-frame {
   position: relative;
   width: 100%;
-  padding-bottom: 40%;     /* altezza ridotta rispetto al 16:9 originale */
+  padding-bottom: 40%;    /* aspect ratio ridotto */
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 6px;     /* arrotonda anche l’iframe */
 }
 
 /* Stili dell’iframe vero e proprio */
@@ -44,3 +87,4 @@ body {
   height: 100%;
   border: none;
 }
+
