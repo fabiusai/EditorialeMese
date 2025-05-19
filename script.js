@@ -11,7 +11,7 @@ function generaReport() {
   const startDateStr = document.getElementById("startDate").value;
   const endDateStr = document.getElementById("endDate").value;
   const output = document.getElementById("output");
-  output.textContent = "";
+  output.textContent = "✅ Report generato. Ora puoi scaricare i file CSV.";
 
   if (!fileInput.files.length) {
     alert("Carica un file Excel.");
