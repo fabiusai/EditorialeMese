@@ -117,6 +117,7 @@ function esportaCSVFormattato() {
       }
       row["Totale"] = ["Facebook","Instagram","LinkedIn","Twitter","YouTube"].reduce((sum, key) => sum + (typeof row[key] === "number" ? row[key] : 0), 0);
     }
+            somma["Totale"] = somma["Facebook"] + somma["Instagram"] + somma["LinkedIn"] + somma["Twitter"] + somma["YouTube"];
     finalData.push(somma);
     for (const argomento in argomenti) finalData.push(argomenti[argomento]);
   }
