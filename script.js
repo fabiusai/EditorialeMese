@@ -1,17 +1,7 @@
-function excelDateToJSDate(serial) {
-  const utc_days = Math.floor(serial - 25569);
-  const utc_value = utc_days * 86400;
-  const date_info = new Date(utc_value * 1000);
-  return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate());
-}
 
 function generaReport() {
   const fileInput = document.getElementById("fileInput");
   const campaignType = document.getElementById("campaignSelect").value;
-  const startDateStr = document.getElementById("startDate").value;
-  const endDateStr = document.getElementById("endDate").value;
-  const output = document.getElementById("output");
-  output.textContent = "✅ Report generato. Ora puoi scaricare i file CSV.";
 
   if (!fileInput.files.length) {
     alert("Carica un file Excel.");
@@ -22,156 +12,92 @@ function generaReport() {
   reader.onload = function (e) {
     const data = new Uint8Array(e.target.result);
     const workbook = XLSX.read(data, { type: "array" });
-    const sheet = workbook.Sheets["Raccolta dati"];
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const json = XLSX.utils.sheet_to_json(sheet);
 
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(endDateStr);
-    if (isNaN(startDate) || isNaN(endDate)) {
-      document.getElementById("output").textContent = "⚠️ ATTENZIONE: date non valide. Usa il calendario.";
-      return;
-    }
-
     const filtered = json.filter(row => {
-      let rawDate = row["Data"];
-      if (!rawDate) return false;
-      if (typeof rawDate === "number") {
-        rawDate = excelDateToJSDate(rawDate);
-      } else if (typeof rawDate === "string") {
-        const [yyyy, mm, dd] = rawDate.split("T")[0].split("-");
-        rawDate = new Date(yyyy, mm - 1, dd);
-      } else {
-        rawDate = new Date(rawDate);
-      }
-      if (isNaN(rawDate) || rawDate < startDate || rawDate > endDate) return false;
-      const campagna = (row["Campagna"] || "").toLowerCase().trim();
-      if (campaignType === "editoriale" && campagna !== "editoriale") return false;
-      if (campaignType === "campagna" && campagna !== "campagna") return false;
-      if (campaignType === "adv" && !["editoriale", "campagna"].includes(campagna)) return false;
+      const campagna = (row["Campagna"] || "").toString().toLowerCase().trim();
+      if (campaignType === "editoriale") return campagna === "editoriale";
+      if (campaignType === "campagna") return campagna === "campagna";
       return true;
     });
 
-    window.filteredData = filtered;
-
-    if (filtered.length) {
-      document.getElementById("output").textContent = "Report generato. Ora puoi scaricare i file csv.";
-    } else {
-      document.getElementById("output").textContent = "Impossibile generare il report.";
+    if (filtered.length === 0) {
+      alert("Nessun dato disponibile con i criteri selezionati.");
+      return;
     }
-  };
-  reader.readAsArrayBuffer(fileInput.files[0]);
-}
 
-function esportaCSV() {
-  if (!window.filteredData || window.filteredData.length === 0) {
-    alert("Nessun dato da esportare.");
-    return;
-  }
-  const ws = XLSX.utils.json_to_sheet(window.filteredData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Report");
-  XLSX.writeFile(wb, "report_filtrato.csv");
-}
+    filtered.forEach(r => {
+      if (r["Canale"]) r["Canale"] = r["Canale"].toLowerCase().trim();
+    });
 
-function esportaCSVFormattato() {
-  if (!window.filteredData || window.filteredData.length === 0) {
-    alert("Nessun dato da esportare.");
-    return;
-  }
-  const grouped = {};
-  window.filteredData.forEach(row => {
-    const label = (row["Label"] || "SENZA LABEL").toUpperCase();
-    const argomento = row["Argomento"] || "(Senza argomento)";
-    const canale = (row["Canale"] || "").toLowerCase();
-    const istituzionale = row["Istituzionale"] ? "✓" : "";
-    if (!grouped[label]) grouped[label] = {};
-    if (!grouped[label][argomento]) {
-        grouped[label][argomento] = {
-            "Argomento": argomento,
-            "Flag Istituzionale": istituzionale,
-            "Facebook": 0,
-            "Instagram": 0,
-            "LinkedIn": 0,
-            "Twitter": 0,
-            "YouTube": 0,
-            "Totale": 0
+    const gruppi = {};
+    filtered.forEach(row => {
+      const label = (row["Label"] || "").toUpperCase();
+      const argomento = row["Argomento"] || "";
+      const chiave = label + "||" + argomento;
+      if (!gruppi[chiave]) {
+        gruppi[chiave] = {
+          Label: label,
+          Argomento: argomento,
+          Istituzionale: false,
+          facebook: 0, instagram: 0, linkedin: 0, twitter: 0, youtube: 0,
+          Totale: 0
         };
-    }
-    const rowObj = grouped[label][argomento];
-    if (canale.includes("facebook")) rowObj["Facebook"] += 1;
-    else if (canale.includes("instagram")) rowObj["Instagram"] += 1;
-    else if (canale.includes("linkedin")) rowObj["LinkedIn"] += 1;
-    else if (canale.includes("twitter") || canale === "x") rowObj["Twitter"] += 1;
-    else if (canale.includes("youtube")) rowObj["YouTube"] += 1;
-    rowObj["Totale"] = rowObj["Facebook"] + rowObj["Instagram"] + rowObj["LinkedIn"] + rowObj["Twitter"] + rowObj["YouTube"];
-  });
-  const finalData = [];
-  for (const label in grouped) {
-    const somma = {"Argomento": label, "Flag Istituzionale": "", "Facebook": 0, "Instagram": 0, "LinkedIn": 0, "Twitter": 0, "YouTube": 0, "Totale": 0};
-    const argomenti = grouped[label];
-    for (const argomento in argomenti) {
-      const row = argomenti[argomento];
-      for (const canale of ["Facebook", "Instagram", "LinkedIn", "Twitter", "YouTube"]) {
-        if (row[canale] === 0) row[canale] = "";
-        else somma[canale] += typeof row[canale] === "number" ? row[canale] : 0;
       }
-      row["Totale"] = ["Facebook","Instagram","LinkedIn","Twitter","YouTube"].reduce((sum, key) => sum + (typeof row[key] === "number" ? row[key] : 0), 0);
-    }
-            somma["Totale"] = somma["Facebook"] + somma["Instagram"] + somma["LinkedIn"] + somma["Twitter"] + somma["YouTube"];
-    finalData.push(somma);
-    for (const argomento in argomenti) finalData.push(argomenti[argomento]);
-  }
-  const ws = XLSX.utils.json_to_sheet(finalData, { header: ["Argomento","Flag Istituzionale","Facebook","Instagram","LinkedIn","Twitter","YouTube","Totale"] });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Report");
-  XLSX.writeFile(wb, "report_editoriale_formattato.csv");
-}
-
-function calcolaPost() {
-  const fileInput = document.getElementById('csvFileInput');
-  const output = document.getElementById('outputCalcolo');
-
-  if (!fileInput.files.length) {
-    output.textContent = "⚠️ Seleziona un file CSV.";
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    const text = e.target.result;
-    const rows = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
-
-    const canaliMap = {
-      'Facebook': ['facebook', 'facebook postepay', 'facebook postemobile'],
-      'Linkedin': ['linkedin'],
-      'Instagram': ['instagram', 'instagram postepay', 'instagram postemobile'],
-      'X': ['twitter'],
-      'YouTube': ['youtube']
-    };
-
-    const conteggio = { Facebook: 0, Linkedin: 0, Instagram: 0, X: 0, YouTube: 0 };
-    let totale = 0;
-
-    rows.forEach(row => {
-      const campagna = (row['Campagna'] || '').toLowerCase().trim();
-      const canale = (row['Canale'] || '').toLowerCase().trim();
-      if (campagna === 'editoriale') {
-        totale++;
-        for (const [nome, alias] of Object.entries(canaliMap)) {
-          if (alias.includes(canale)) {
-            conteggio[nome]++;
-          }
-        }
+      const g = gruppi[chiave];
+      if (row["Istituzionale"]) g.Istituzionale = true;
+      if (g[row["Canale"]] !== undefined) {
+        g[row["Canale"]]++;
+        g.Totale++;
       }
     });
 
-    output.textContent = `Complessivamente sono stati esaminati ${totale} post editoriali: ` +
-      `${conteggio.Facebook} post Facebook, ` +
-      `${conteggio.Linkedin} post Linkedin, ` +
-      `${conteggio.Instagram} post Instagram, ` +
-      `${conteggio.X} post X (Twitter), ` +
-      `${conteggio.YouTube} video YouTube.`;
+    const gruppiArray = Object.values(gruppi);
+    gruppiArray.sort((a, b) => a.Label.localeCompare(b.Label) || a.Argomento.localeCompare(b.Argomento));
+
+    const rows = [];
+    rows.push(["Argomento", "Flag Istituzionale", "Facebook", "Instagram", "LinkedIn", "Twitter", "YouTube", "Totale"]);
+
+    let lastLabel = null;
+    for (const g of gruppiArray) {
+      if (lastLabel !== g.Label) {
+        if (lastLabel !== null) rows.push([]);
+        const somma = campo => gruppiArray.filter(x => x.Label === g.Label).reduce((acc, cur) => acc + cur[campo], 0);
+        rows.push([
+          g.Label,
+          "",
+          somma("facebook") || "",
+          somma("instagram") || "",
+          somma("linkedin") || "",
+          somma("twitter") || "",
+          somma("youtube") || "",
+          somma("Totale")
+        ]);
+        lastLabel = g.Label;
+      }
+
+      rows.push([
+        g.Argomento,
+        g.Istituzionale ? "✓" : "",
+        g.facebook || "",
+        g.instagram || "",
+        g.linkedin || "",
+        g.twitter || "",
+        g.youtube || "",
+        g.Totale || ""
+      ]);
+    }
+
+    const csvContent = "data:text/csv;charset=utf-8," + rows.map(r => r.map(v => `"${v}"`).join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "report_editoriale.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  reader.readAsText(fileInput.files[0]);
+  reader.readAsArrayBuffer(fileInput.files[0]);
 }
