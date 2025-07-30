@@ -2,33 +2,362 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Report attività editoriale mensile</title>
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Attività Editoriale Mensile</title>
+<link rel="icon" href="favicon.ico">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="script.js"></script>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary-color: #003DA5; /* Blu */
+      --secondary-color: #FFC72C; /* Giallo */
+      --background-color: #f8f9fa;
+      --text-color: #333;
+      --border-color: #e0e0e0;
+      --white-color: #ffffff;
+    }
+    body {
+      font-family: 'Arial', sans-serif; background-color: var(--background-color);
+      margin: 0; padding: 20px; color: var(--text-color);
+    }
+    .container {
+      max-width: 900px; margin: 30px auto; background-color: var(--white-color);
+      border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;
+    }
+    .header {
+      background-color: var(--primary-color); color: var(--secondary-color);
+      padding: 25px 40px; text-align: center;
+    }
+    .header h1 { margin: 0; font-size: 2em; font-weight: bold; }
+    .main-content { padding: 30px 40px; }
+    .step-section {
+      border: 1px solid var(--border-color); border-radius: 8px;
+      margin-bottom: 25px; padding: 20px; background-color: var(--white-color);
+    }
+    .step-title {
+      display: flex; align-items: center; gap: 15px; color: var(--primary-color);
+      margin-top: 0; margin-bottom: 20px; font-size: 1.4em;
+    }
+    .step-title .step-number {
+      background-color: var(--secondary-color); color: var(--primary-color);
+      border-radius: 50%; width: 35px; height: 35px; display: inline-flex;
+      align-items: center; justify-content: center; font-weight: bold; font-size: 0.9em;
+    }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 1.1em; }
+    select {
+      width: 100%; padding: 12px; border: 1px solid var(--border-color);
+      border-radius: 6px; background-color: #fff; font-size: 1em; appearance: none;
+      background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23003DA5%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E');
+      background-repeat: no-repeat; background-position: right 15px center; background-size: 12px;
+    }
+    .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+    .file-upload-wrapper input[type=file] {
+        font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer;
+    }
+    .file-upload-button {
+        display: flex; align-items: center; justify-content: center; border: 2px dashed var(--primary-color);
+        color: var(--primary-color); background-color: #f0f5ff; padding: 20px; border-radius: 8px;
+        cursor: pointer; transition: background-color 0.3s ease;
+    }
+    .file-upload-button:hover { background-color: #e6efff; }
+    #fileName { margin-top: 10px; font-style: italic; color: #555; }
+    #channelButtonsContainer { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 5px; }
+    .channel-button {
+      padding: 8px 15px; font-size: 0.9em; font-weight: 500; border-radius: 20px;
+      cursor: pointer; border: 1px solid var(--primary-color); background-color: var(--white-color);
+      color: var(--primary-color); transition: all 0.2s ease-in-out;
+    }
+    .channel-button:hover { transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .channel-button.active { background-color: var(--primary-color); color: var(--white-color); font-weight: bold; }
+    .channel-button.special {
+      border-color: var(--secondary-color); border-width: 2px;
+      color: var(--primary-color); font-weight: bold;
+    }
+    .channel-button.special.active { background-color: var(--secondary-color); color: var(--primary-color); }
+    #channelPlaceholder { color: #777; font-style: italic; width: 100%; }
+    .action-button-wrapper { text-align: center; padding: 10px 0; }
+    #generateBtn {
+      background-color: var(--primary-color); color: var(--secondary-color); border: 2px solid var(--primary-color);
+      padding: 15px 40px; font-size: 1.2em; font-weight: bold; cursor: pointer; display: inline-flex;
+      align-items: center; gap: 10px; border-radius: 8px; transition: background-color 0.3s, color 0.3s, transform 0.1s;
+    }
+    #generateBtn:hover:not(:disabled) { background-color: var(--white-color); color: var(--primary-color); }
+    #generateBtn:active:not(:disabled) { transform: scale(0.98); }
+    #generateBtn:disabled { background-color: #a0a0a0; color: #e0e0e0; border-color: #a0a0a0; cursor: not-allowed; }
+    .iframe-container { margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 30px; }
+    @media (max-width: 768px) {
+      body { padding: 10px; } .container { margin: 10px auto; } .header { padding: 20px; }
+      .header h1 { font-size: 1.5em; } .main-content { padding: 20px; } .step-title { font-size: 1.2em; }
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Report attività editoriale mensile</h1>
-    <div class="upload-section">
-      <label for="fileInput">Carica file Excel mensile:</label>
-      <input type="file" id="fileInput" accept=".xlsx" />
-    </div>
-    <div class="campaign-section">
-      <label for="campaignSelect">Tipo di campagna:</label>
-      <select id="campaignSelect">
-        <option value="tutti">Tutti i dati</option>
-        <option value="editoriale">Editoriale</option>
-        <option value="campagna">Adv</option>
-      </select>
-    </div>
-    <button onclick="generaReport()">Genera Report</button>
 
-    <!-- Riquadro con iframe -->
-    <div class="iframe-container" style="margin-top:20px;">
-      <iframe src="https://excelformat.onrender.com/" width="100%" height="200" style="border:none;"></iframe>
-    </div>
+  <div class="container">
+    <header class="header"><h1>Report Attività Editoriale</h1></header>
+    <main class="main-content">
+      <section class="step-section">
+        <h2 class="step-title"><span class="step-number">1</span>Caricamento Dati</h2>
+        <div class="file-upload-wrapper">
+          <div class="file-upload-button"><i class="fas fa-upload" style="margin-right: 10px;"></i><span>Seleziona un file Excel (.xlsx)</span></div>
+          <input type="file" id="fileInput" accept=".xlsx" />
+        </div>
+        <div id="fileName">Nessun file selezionato.</div>
+      </section>
+      <section class="step-section">
+        <h2 class="step-title"><span class="step-number">2</span>Filtri di Elaborazione</h2>
+        <div class="form-group">
+          <label for="campaignSelect">Filtra per tipo di campagna:</label>
+          <select id="campaignSelect">
+            <option value="tutti">Tutti i dati</option><option value="editoriale">Editoriale</option><option value="campagna">Adv</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Filtra per canale:</label>
+          <div id="channelButtonsContainer"><p id="channelPlaceholder">Carica un file per visualizzare i canali.</p></div>
+        </div>
+      </section>
+      <section class="step-section">
+        <h2 class="step-title"><span class="step-number">3</span>Generazione Report</h2>
+        <div class="action-button-wrapper">
+          <button id="generateBtn" disabled><i class="fas fa-cogs"></i><span id="btnText">Genera Report</span></button>
+        </div>
+      </section>
+      <div class="iframe-container">
+        <iframe src="https://excelformat.onrender.com/" width="100%" height="200" style="border:none;"></iframe>
+      </div>
+    </main>
   </div>
+
+<script>
+let excelData = [];
+const fileInput = document.getElementById('fileInput');
+const fileNameDisplay = document.getElementById('fileName');
+const generateBtn = document.getElementById('generateBtn');
+const btnText = document.getElementById('btnText');
+const channelButtonsContainer = document.getElementById('channelButtonsContainer');
+const channelPlaceholder = document.getElementById('channelPlaceholder');
+
+fileInput.addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (!file) { resetUI(); return; }
+  fileNameDisplay.textContent = `File selezionato: ${file.name}`;
+  btnText.textContent = "Caricamento file...";
+  generateBtn.disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      excelData = XLSX.utils.sheet_to_json(worksheet);
+      
+      if (excelData.length > 0) {
+        const headers = Object.keys(excelData[0]);
+        const required = ['Label', 'Argomento', 'Canale', 'Istituzionale'];
+        const missing = required.filter(h => !headers.includes(h));
+        if (missing.length > 0) alert(`Attenzione: Colonne necessarie mancanti: ${missing.join(', ')}.`);
+      }
+      populateChannelButtons(excelData);
+      generateBtn.disabled = false;
+      btnText.textContent = "Genera Report";
+    } catch (error) {
+      console.error("Errore lettura Excel:", error);
+      alert("Errore lettura file. Assicurati che sia un .xlsx valido con le colonne richieste.");
+      resetUI();
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function populateChannelButtons(data) {
+  channelButtonsContainer.innerHTML = '';
+  if (data.length === 0) {
+    channelPlaceholder.style.display = 'block';
+    channelButtonsContainer.appendChild(channelPlaceholder);
+    return;
+  }
+  channelPlaceholder.style.display = 'none';
+
+  const allChannels = [...new Set(data.map(row => row.Canale).filter(Boolean))];
+  const pureChannels = allChannels.filter(c => !c.includes(' '));
+  const otherChannels = allChannels.filter(c => c.includes(' '));
+
+  if (pureChannels.length > 0) {
+    const specialBtn = document.createElement('button');
+    specialBtn.className = 'channel-button special';
+    specialBtn.textContent = 'Poste Italiane';
+    specialBtn.dataset.channelType = 'special-pure-channels';
+    specialBtn.addEventListener('click', () => {
+      // Logica non più mutuamente esclusiva
+      specialBtn.classList.toggle('active');
+    });
+    channelButtonsContainer.appendChild(specialBtn);
+  }
+
+  otherChannels.sort().forEach(channel => {
+    const btn = document.createElement('button');
+    btn.className = 'channel-button';
+    btn.textContent = channel;
+    btn.dataset.channelName = channel;
+    btn.dataset.channelType = 'other';
+    btn.addEventListener('click', () => {
+      // Logica non più mutuamente esclusiva
+      btn.classList.toggle('active');
+    });
+    channelButtonsContainer.appendChild(btn);
+  });
+}
+
+function resetUI() {
+    fileNameDisplay.textContent = 'Nessun file selezionato.';
+    fileInput.value = '';
+    excelData = [];
+    channelButtonsContainer.innerHTML = '';
+    channelPlaceholder.style.display = 'block';
+    channelButtonsContainer.appendChild(channelPlaceholder);
+    generateBtn.disabled = true;
+    btnText.textContent = "Genera Report";
+}
+
+function generaReport() {
+  if (excelData.length === 0) { alert("Carica un file Excel."); return; }
+  generateBtn.disabled = true;
+  btnText.textContent = "Elaborazione...";
+  generateBtn.querySelector('i').className = 'fas fa-spinner fa-spin';
+
+  setTimeout(() => {
+    try {
+      // --- 1. FILTRAGGIO DATI ---
+      const campaignFilter = document.getElementById('campaignSelect').value;
+      let data = [...excelData];
+      if (campaignFilter !== 'tutti') {
+        data = data.filter(row => row.Campagna && row.Campagna.toLowerCase() === campaignFilter);
+      }
+      
+      // NUOVA LOGICA DI FILTRAGGIO CANALI (NON ESCLUSIVA)
+      let channelsToFilter = [];
+      const specialBtn = document.querySelector('.channel-button.special');
+      if (specialBtn && specialBtn.classList.contains('active')) {
+          const pureChannelNames = [...new Set(excelData.map(r => r.Canale).filter(c => c && !c.includes(' ')))];
+          channelsToFilter.push(...pureChannelNames);
+      }
+      document.querySelectorAll('.channel-button[data-channel-type="other"].active').forEach(btn => {
+          channelsToFilter.push(btn.dataset.channelName);
+      });
+
+      if (channelsToFilter.length > 0) {
+          data = data.filter(row => row.Canale && channelsToFilter.includes(row.Canale));
+      }
+
+      if (data.length === 0) {
+        alert("Nessun dato trovato con i filtri selezionati.");
+        resetButtonState();
+        return;
+      }
+
+      // --- 2. RAGGRUPPAMENTO E AGGREGAZIONE ---
+      const reportRows = [];
+      const fixedChannelHeaders = ["Facebook", "Instagram", "LinkedIn", "Twitter", "YouTube"];
+      const groupedByLabel = data.reduce((acc, row) => {
+        const label = row.Label || 'Senza Etichetta';
+        if (!acc[label]) acc[label] = [];
+        acc[label].push(row);
+        return acc;
+      }, {});
+
+      Object.keys(groupedByLabel).sort().forEach(label => {
+        const labelItems = groupedByLabel[label];
+        const labelSummary = { "Argomento": label.toUpperCase(), "Flag Istituzionale": "", "Totale": 0 };
+        fixedChannelHeaders.forEach(h => labelSummary[h] = 0);
+
+        const groupedByArgomento = labelItems.reduce((acc, row) => {
+            const arg = row.Argomento;
+            if(!acc[arg]) acc[arg] = [];
+            acc[arg].push(row);
+            return acc;
+        }, {});
+
+        let processedArguments = [];
+        for(const argName in groupedByArgomento){
+            const argItems = groupedByArgomento[argName];
+            const argRow = { "Argomento": argName, "Flag Istituzionale": "", "Totale": 0 };
+            fixedChannelHeaders.forEach(h => argRow[h] = 0);
+
+            let isInstitutional = false;
+            argItems.forEach(item => {
+                // NUOVA LOGICA DI CONTEGGIO: considera solo la prima parola del canale
+                if (item.Canale) {
+                    const baseChannel = item.Canale.split(' ')[0];
+                    if (fixedChannelHeaders.includes(baseChannel)) {
+                        argRow[baseChannel]++;
+                    }
+                }
+                if(item.Istituzionale === 1 || item.Istituzionale === '✓') isInstitutional = true;
+            });
+            
+            argRow["Flag Istituzionale"] = isInstitutional ? '✓' : '';
+            argRow["Totale"] = fixedChannelHeaders.reduce((sum, h) => sum + argRow[h], 0);
+
+            fixedChannelHeaders.forEach(h => labelSummary[h] += argRow[h]);
+            processedArguments.push(argRow);
+        }
+        
+        labelSummary["Totale"] = fixedChannelHeaders.reduce((sum, h) => sum + labelSummary[h], 0);
+        
+        processedArguments.sort((a, b) => {
+            const aInst = a["Flag Istituzionale"] === '✓' ? 1 : 0;
+            const bInst = b["Flag Istituzionale"] === '✓' ? 1 : 0;
+            if(aInst !== bInst) return bInst - aInst;
+            return b["Totale"] - a["Totale"];
+        });
+
+        reportRows.push(labelSummary);
+        reportRows.push(...processedArguments);
+        reportRows.push({});
+      });
+      
+      // --- 4. GENERAZIONE CSV ---
+      const finalHeaders = ["Argomento", "Flag Istituzionale", ...fixedChannelHeaders, "Totale"];
+      const worksheet = XLSX.utils.json_to_sheet(reportRows, { header: finalHeaders, skipHeader: false });
+      
+      Object.keys(worksheet).forEach(cell => {
+          if (worksheet[cell].v === 0) {
+              worksheet[cell].t = 's';
+              worksheet[cell].v = '';
+          }
+      });
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Report Aggregato');
+      XLSX.writeFile(workbook, 'report_aggregato.csv');
+
+      btnText.textContent = "Report Generato!";
+      generateBtn.querySelector('i').className = 'fas fa-check';
+      setTimeout(resetButtonState, 2000);
+
+    } catch (error) {
+      console.error("Errore generazione report:", error);
+      alert("Errore imprevisto durante la generazione del report.");
+      resetButtonState();
+    }
+  }, 100);
+}
+
+function resetButtonState() {
+  generateBtn.disabled = excelData.length === 0;
+  btnText.textContent = "Genera Report";
+  generateBtn.querySelector('i').className = 'fas fa-cogs';
+}
+
+generateBtn.addEventListener('click', generaReport);
+</script>
+
 </body>
 </html>
