@@ -291,16 +291,25 @@ function generaReport() {
             fixedChannelHeaders.forEach(h => argRow[h] = 0);
 
             let isInstitutional = false;
+            
+            // --- INIZIO BLOCCO MODIFICATO ---
+            // La logica di conteggio è stata resa più robusta per gestire nomi di canali composti.
             argItems.forEach(item => {
-                // NUOVA LOGICA DI CONTEGGIO: considera solo la prima parola del canale
                 if (item.Canale) {
-                    const baseChannel = item.Canale.split(' ')[0];
-                    if (fixedChannelHeaders.includes(baseChannel)) {
-                        argRow[baseChannel]++;
+                    // Si itera sui nomi dei canali principali (fixedChannelHeaders).
+                    // Se il nome di un canale (es. "YouTube") è contenuto nel valore della cella 
+                    // (es. "Canale YouTube Ufficiale"), il conteggio viene assegnato correttamente.
+                    // Il confronto è case-insensitive per maggiore sicurezza.
+                    for (const header of fixedChannelHeaders) {
+                        if (item.Canale.toLowerCase().includes(header.toLowerCase())) {
+                            argRow[header]++;
+                            break; // Trovato, si esce per evitare doppi conteggi (es. un canale chiamato "Facebook e Instagram").
+                        }
                     }
                 }
                 if(item.Istituzionale === 1 || item.Istituzionale === '✓') isInstitutional = true;
             });
+            // --- FINE BLOCCO MODIFICATO ---
             
             argRow["Flag Istituzionale"] = isInstitutional ? '✓' : '';
             argRow["Totale"] = fixedChannelHeaders.reduce((sum, h) => sum + argRow[h], 0);
