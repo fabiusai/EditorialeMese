@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generatore Report Social</title>
+    <!-- Favicon --><link rel="icon" href="favicon.ico">
+    <!-- SheetJS Library for reading .xlsx files --><script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- JSZip for creating zip files --><script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Tailwind CSS per uno stile moderno e responsivo --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --poste-blue: #0146bc;
+            --poste-yellow: #ffdd00; 
+            --light-gray: #f0f2f5;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Nunito Sans', sans-serif;
+            background-color: var(--light-gray);
+        }
+        .btn-primary {
+            background-color: var(--poste-blue); color: white;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+        .btn-primary:hover { background-color: #013aa1; }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-secondary {
+            background-color: var(--poste-yellow); color: var(--poste-blue);
+            font-weight: 700;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+        .btn-secondary:hover { background-color: #eac800; }
+        .btn-secondary:active { transform: scale(0.98); }
+        .header-bg { background-color: var(--poste-blue); }
+        .card {
+            background-color: white; border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .file-input-label {
+            border: 2px dashed #cbd5e1;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+        }
+        .file-input-label:hover {
+            border-color: var(--poste-blue);
+            background-color: #f8fafc;
+        }
+        .svg-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 0.75rem;
+            background-color: #f8f9fa;
+        }
+        .svg-container svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <header class="header-bg p-4 shadow-md sticky top-0 z-10">
+        <div class="container mx-auto flex items-center gap-4">
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2zM6 12v6h2v-6H6zm4 0v6h2v-6h-2zm4-6v12h2V6h-2z"/></svg>
+            <h1 class="text-xl md:text-2xl font-bold text-white">Dashboard Riepilogo Contenuti</h1>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        
+        <div class="card p-6 md:p-8 max-w-3xl mx-auto">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-gray-700">Genera Report SVG</h2>
+                <p class="mt-2 text-gray-500">Carica il tuo file .csv o .xlsx per creare i riepiloghi visuali.</p>
+            </div>
+            <div class="mt-8">
+                <form id="upload-form">
+                    <label for="file-upload" class="file-input-label flex justify-center w-full px-6 py-10 rounded-lg cursor-pointer">
+                        <div class="text-center">
+                             <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <span class="mt-2 block text-sm font-medium text-gray-600" id="file-name">Trascina o seleziona un file</span>
+                            <p class="text-xs text-gray-500">Formati supportati: .xlsx, .csv</p>
+                        </div>
+                        <input id="file-upload" name="file-upload" type="file" class="sr-only" accept=".csv, .xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+                    </label>
+
+                    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-6">
+                        <div>
+                            <label for="font-size-input" class="block text-sm font-medium text-gray-700">Dimensione Testo (px)</label>
+                            <input type="number" id="font-size-input" value="18" min="10" max="40" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="line-height-input" class="block text-sm font-medium text-gray-700">Interlinea (px)</label>
+                            <input type="number" id="line-height-input" value="28" min="20" max="50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-center">
+                        <button type="submit" id="process-button" class="btn-primary font-bold py-3 px-8 rounded-full shadow-lg w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Elabora File
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="results-container" class="mt-12"></div>
+
+    </main>
+    
+    <footer class="text-center py-4 mt-8">
+        <p class="text-sm text-gray-500">&copy; 2025 - Strumento di Analisi Dati</p>
+    </footer>
+
+    <script>
+        const ICON_PATHS = {
+            flag: 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z',
+            facebook: 'M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.142v3.24h-1.918c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z',
+            linkedin: 'M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z',
+            instagram: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.584-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.584.069-4.85c.149-3.225 1.664-4.771 4.919-4.919 1.266-.058 1.644-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.358-.2 6.78-2.618 6.98-6.98.059-1.281.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.2-4.358-2.618-6.78-6.98-6.98-1.281-.058-1.689-.072-4.948-.072zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z',
+            x: 'M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.931 6.064-6.931zM17.61 20.644h2.039L6.486 3.24H4.298l13.312 17.404z',
+            youtube: 'M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z',
+            whatsapp: 'M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zM12.05 20.15c-1.49 0-2.93-.4-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31c-.82-1.31-1.26-2.83-1.26-4.38 0-4.54 3.69-8.23 8.24-8.23 2.22 0 4.31.87 5.82 2.38s2.38 3.6 2.38 5.82c-.01 4.54-3.69 8.23-8.24 8.23zm4.52-6.13c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.15.17-.29.19-.54.06-.25-.12-1.06-.39-2.02-1.24-.75-.66-1.25-1.48-1.4-1.73-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.13-.14.17-.25.25-.41.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.43.06-.66.31-.22.25-.86.85-.86 2.07 0 1.22.88 2.4 1 2.56.12.17 1.74 2.65 4.22 3.72.59.25 1.05.41 1.41.52.6.19 1.14.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.07-.1-.17-.16-.42-.28z',
+        };
+        const CHANNELS_ORDER = ["Facebook", "Linkedin", "Instagram", "X", "Youtube", "Whatsapp"];
+
+        const uploadForm = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-upload');
+        const fileNameDisplay = document.getElementById('file-name');
+        const processButton = document.getElementById('process-button');
+        const resultsContainer = document.getElementById('results-container');
+        const fontSizeInput = document.getElementById('font-size-input');
+        const lineHeightInput = document.getElementById('line-height-input');
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                fileNameDisplay.textContent = fileInput.files[0].name;
+                fileNameDisplay.classList.add('font-bold', 'text-blue-700');
+                processButton.disabled = false;
+            } else {
+                fileNameDisplay.textContent = 'Trascina o seleziona un file';
+                fileNameDisplay.classList.remove('font-bold', 'text-blue-700');
+                processButton.disabled = true;
+            }
+        });
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (fileInput.files.length === 0) return;
+
+            processButton.disabled = true;
+            processButton.textContent = 'Caricamento...';
+            resultsContainer.innerHTML = '<p class="text-center text-gray-500">Elaborazione dei dati...</p>';
+            
+            try {
+                let data;
+                const file = fileInput.files[0];
+                const fileName = file.name.toLowerCase();
+
+                if (fileName.endsWith('.csv')) {
+                    const csvText = await file.text();
+                    data = parseCSV(csvText);
+                } else if (fileName.endsWith('.xlsx')) {
+                    data = await readXLSX(file);
+                } else {
+                    throw new Error("Formato file non supportato. Caricare un .csv o .xlsx.");
+                }
+
+                const processedData = processData(data);
+                displayResults(processedData);
+                
+                processButton.classList.remove('btn-primary');
+                processButton.classList.add('bg-green-500');
+                processButton.textContent = 'Fatto!';
+                
+            } catch (error) {
+                console.error("Errore durante l'elaborazione:", error);
+                resultsContainer.innerHTML = `<p class="text-center text-red-500 p-4 bg-red-100 rounded-lg"><b>Si è verificato un errore:</b> ${error.message}</p>`;
+                processButton.classList.remove('btn-primary');
+                processButton.classList.add('bg-red-500');
+                processButton.textContent = 'Errore';
+            }
+
+            setTimeout(() => {
+                processButton.disabled = false;
+                processButton.classList.remove('bg-green-500', 'bg-red-500');
+                processButton.classList.add('btn-primary');
+                processButton.textContent = 'Elabora File';
+            }, 3000);
+        });
+        
+        function readXLSX(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const json_data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                        resolve(json_data);
+                    } catch (err) { reject(new Error("Impossibile leggere il file XLSX.")); }
+                };
+                reader.onerror = () => reject(new Error("Errore durante la lettura del file."));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function parseCSV(text) {
+             if (text.charCodeAt(0) === 0xFEFF) text = text.substring(1);
+            const rows = []; let currentRow = []; let currentField = ''; let inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i]; const nextChar = text[i + 1];
+                if (inQuotes) {
+                    if (char === '"' && nextChar === '"') { currentField += '"'; i++; } 
+                    else if (char === '"') { inQuotes = false; } 
+                    else { currentField += char; }
+                } else {
+                    if (char === '"') { inQuotes = true; } 
+                    else if (char === ',') { currentRow.push(currentField); currentField = ''; } 
+                    else if (char === '\n' || char === '\r') {
+                        if (i > 0 && text[i - 1] !== '\n' && text[i - 1] !== '\r') {
+                            currentRow.push(currentField); rows.push(currentRow);
+                            currentRow = []; currentField = '';
+                        }
+                        if (char === '\r' && nextChar === '\n') i++;
+                    } else { currentField += char; }
+                }
+            }
+            if (currentField || currentRow.length > 0) { currentRow.push(currentField); rows.push(currentRow); }
+            return rows;
+        }
+
+        function processData(data) {
+            if (!data || data.length < 2) {
+                throw new Error("File vuoto o con solo le intestazioni.");
+            }
+            const headers = data[0].map(h => (h || "").toString().trim());
+            const requiredHeaders = ["Label", "Canale", "Istituzionale", "Argomento"];
+            if (requiredHeaders.some(h => !headers.includes(h))) {
+                 throw new Error(`Intestazioni non valide. Assicurati che ${requiredHeaders.join(', ')} siano presenti.`);
+            }
+            const labelIndex = headers.indexOf("Label");
+            const canaleIndex = headers.indexOf("Canale");
+            const istitutionaleIndex = headers.indexOf("Istituzionale");
+            const argomentoIndex = headers.indexOf("Argomento");
+
+            const results = {};
+            for (const row of data.slice(1)) {
+                if (row.length === 0 || row.every(cell => cell === "")) continue;
+
+                const label = (row[labelIndex] || "").toString().trim();
+                const canale = (row[canaleIndex] || "").toString().trim();
+                const argomento = (row[argomentoIndex] || "N/D").toString().trim();
+                const isArgomentoIstituzionale = (row[istitutionaleIndex] || "").toString().trim() === '1';
+
+                if (!label || !canale) continue;
+
+                if (!results[label]) {
+                    results[label] = {
+                        totalPosts: 0,
+                        channels: { Facebook: 0, Linkedin: 0, Instagram: 0, X: 0, Youtube: 0, Whatsapp: 0 },
+                        argomenti: {}
+                    };
+                }
+                
+                if (!results[label].argomenti[argomento]) {
+                    results[label].argomenti[argomento] = { 
+                        channels: { Facebook: 0, Linkedin: 0, Instagram: 0, X: 0, Youtube: 0, Whatsapp: 0 },
+                        totalPosts: 0,
+                        isIstituzionale: false
+                    };
+                }
+                
+                if (isArgomentoIstituzionale) {
+                    results[label].argomenti[argomento].isIstituzionale = true;
+                }
+
+                let matchedChannel = null;
+                const canalLower = canale.toLowerCase();
+
+                for (const channelName of CHANNELS_ORDER) {
+                    const key = channelName.toLowerCase();
+                    if (key === 'x') {
+                        if (canalLower.includes('x') || canalLower.includes('twitter')) {
+                            matchedChannel = channelName;
+                            break;
+                        }
+                    } else {
+                        if (canalLower.includes(key)) {
+                            matchedChannel = channelName;
+                            break;
+                        }
+                    }
+                }
+
+                if (matchedChannel) {
+                    if(!results[label].argomenti[argomento].isIstituzionale && isArgomentoIstituzionale) {
+                        results[label].argomenti[argomento].isIstituzionale = true;
+                    }
+                    results[label].argomenti[argomento].channels[matchedChannel]++;
+                    results[label].argomenti[argomento].totalPosts++;
+                    results[label].channels[matchedChannel]++;
+                    results[label].totalPosts++;
+                }
+            }
+            for(const label in results) {
+                for(const arg in results[label].argomenti) {
+                    if(results[label].argomenti[arg].totalPosts === 0) {
+                        delete results[label].argomenti[arg];
+                    }
+                }
+            }
+
+            return results;
+        }
+
+
+        function displayResults(processedData) {
+            resultsContainer.innerHTML = '';
+            if (Object.keys(processedData).length === 0) {
+                resultsContainer.innerHTML = '<p class="text-center text-gray-500">Nessun dato da visualizzare.</p>';
+                return;
+            }
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'flex justify-between items-center mb-8';
+            
+            const title = document.createElement('h2');
+            title.className = 'text-3xl font-bold text-gray-800';
+            title.textContent = 'Riepiloghi Generati';
+            headerDiv.appendChild(title);
+
+            const downloadAllButton = document.createElement('button');
+            downloadAllButton.id = 'download-all-btn';
+            downloadAllButton.className = 'btn-primary font-bold py-2 px-6 rounded-full shadow-lg';
+            downloadAllButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+                Scarica Tutti i Grafici (.zip)
+            `;
+            downloadAllButton.onclick = () => downloadAllSVG(processedData);
+            headerDiv.appendChild(downloadAllButton);
+
+            resultsContainer.appendChild(headerDiv);
+
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-1 xl:grid-cols-1 gap-8 items-start';
+            
+            for (const label in processedData) {
+                const data = processedData[label];
+                const svgString = generateSVG(label, data);
+                
+                const item = document.createElement('div');
+                item.className = 'card p-4 flex flex-col items-center w-full';
+                item.innerHTML = `
+                    <div class="svg-container rounded-lg shadow-sm">
+                        ${svgString}
+                    </div>
+                    <button class="btn-secondary mt-4 py-2 px-6 rounded-full self-center" data-label="${label}">
+                        Scarica Riepilogo SVG
+                    </button>
+                `;
+                grid.appendChild(item);
+            }
+            resultsContainer.appendChild(grid);
+
+            document.querySelectorAll('.btn-secondary').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const label = e.target.dataset.label;
+                    const svgString = generateSVG(label, processedData[label]);
+                    downloadSVG(svgString, label);
+                });
+            });
+        }
+
+        function escapeXML(str) {
+            return str.replace(/[<>&'"]/g, function (c) {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        }
+        
+        function generateSVG(label, data) {
+            // --- INIZIO CONFIGURAZIONE LAYOUT ---
+            const baseFontSize = parseInt(fontSizeInput.value) || 18;
+            const rowHeight = parseInt(lineHeightInput.value) || 28;
+
+            const argColWidth = 850;
+            const flagColWidth = 30;
+            const channelColWidth = 80;
+            const totalColWidth = 100;
+            const paddingX = 30;
+            
+            const width = paddingX + argColWidth + (channelColWidth * CHANNELS_ORDER.length) + totalColWidth + paddingX;
+
+            const headerHeight = 40;
+            const tableHeaderHeight = baseFontSize + 20;
+            const footerHeight = baseFontSize + 30;
+            const paddingY = 25;
+            const darkTextColor = '#101827';
+            // --- FINE CONFIGURAZIONE LAYOUT ---
+
+            const sortedArgomenti = Object.entries(data.argomenti).sort(([, a], [, b]) => {
+                if (a.isIstituzionale && !b.isIstituzionale) return -1;
+                if (!a.isIstituzionale && b.isIstituzionale) return 1;
+                return b.totalPosts - a.totalPosts;
+            });
+            const numArgomenti = sortedArgomenti.length;
+            const totalContentHeight = (numArgomenti * rowHeight);
+            const totalHeight = headerHeight + tableHeaderHeight + totalContentHeight + footerHeight + paddingY;
+
+            let currentY = paddingY;
+            
+            let svgContent = `<text x="${paddingX}" y="${currentY + 25}" font-size="${baseFontSize + 10}" font-weight="700" fill="#0146bc" text-transform="uppercase">${escapeXML(label)}</text>`;
+            currentY += headerHeight;
+
+            let tableHeader = `<rect x="${paddingX}" y="${currentY}" width="${width - (2 * paddingX)}" height="${tableHeaderHeight}" fill="#f8f9fa" />
+                               <text x="${paddingX + 20}" y="${currentY + (tableHeaderHeight/2) + 6}" font-size="${baseFontSize + 2}" font-weight="600" fill="${darkTextColor}">Argomento</text>`;
+            
+            let channelHeaderX = paddingX + argColWidth;
+            CHANNELS_ORDER.forEach(channelName => {
+                tableHeader += `<g transform="translate(${channelHeaderX + (channelColWidth / 2) - 11}, ${currentY + (tableHeaderHeight/2) - 11})"><path d="${ICON_PATHS[channelName.toLowerCase()]}" fill="#0146bc" transform="scale(1.1)"/></g>`;
+                channelHeaderX += channelColWidth;
+            });
+            tableHeader += `<text x="${channelHeaderX + (totalColWidth / 2)}" y="${currentY + (tableHeaderHeight/2) + 6}" font-size="${baseFontSize + 2}" font-weight="600" fill="${darkTextColor}" text-anchor="middle">Totale</text>`;
+            svgContent += tableHeader;
+            currentY += tableHeaderHeight;
+
+            sortedArgomenti.forEach(([argomento, details], index) => {
+                const rowY = currentY + (index * rowHeight);
+                
+                svgContent += `<line x1="${paddingX}" y1="${rowY + rowHeight}" x2="${width - paddingX}" y2="${rowY + rowHeight}" stroke="#eff2f5" stroke-width="1.5"/>`;
+                
+                const maxArgLength = 85;
+                const truncatedArgomento = argomento.length > maxArgLength ? argomento.substring(0, maxArgLength) + '...' : argomento;
+
+                const textY = rowY + (rowHeight/2) + (baseFontSize/2.5);
+
+                let textX = paddingX + 20;
+
+                if (details.isIstituzionale) {
+                     svgContent += `<g transform="translate(${textX}, ${rowY + (rowHeight/2) - 9})"><path d="${ICON_PATHS.flag}" fill="#0146bc"/></g>`;
+                     textX += flagColWidth;
+                }
+
+                svgContent += `<text x="${textX}" y="${textY}" font-size="${baseFontSize}" fill="${darkTextColor}">${escapeXML(truncatedArgomento)}</text>`;
+                
+                let channelValueX = paddingX + argColWidth;
+                CHANNELS_ORDER.forEach(channelName => {
+                    const count = details.channels[channelName] || 0;
+                    if (count > 0) {
+                        svgContent += `<text x="${channelValueX + (channelColWidth / 2)}" y="${textY}" text-anchor="middle" font-size="${baseFontSize}" fill="${darkTextColor}">${count}</text>`;
+                    }
+                    channelValueX += channelColWidth;
+                });
+                svgContent += `<text x="${channelValueX + (totalColWidth / 2)}" y="${textY}" text-anchor="middle" font-size="${baseFontSize}" font-weight="700" fill="#0146bc">${details.totalPosts}</text>`;
+            });
+            currentY += totalContentHeight;
+
+            svgContent += `<rect x="${paddingX}" y="${currentY}" width="${width - (2 * paddingX)}" height="${footerHeight}" fill="#f0f2f5" />
+                           <text x="${paddingX + 20}" y="${currentY + (footerHeight/2) + 7}" font-size="${baseFontSize+2}" font-weight="700" fill="#0146bc" text-transform="uppercase">Totali Globali</text>`;
+
+            let globalChannelX = paddingX + argColWidth;
+            CHANNELS_ORDER.forEach(channelName => {
+                const count = data.channels[channelName] || 0;
+                if(count > 0) {
+                    svgContent += `<text x="${globalChannelX + (channelColWidth/2)}" y="${currentY + (footerHeight/2) + 7}" text-anchor="middle" font-size="${baseFontSize+2}" font-weight="700" fill="#0146bc">${count}</text>`;
+                }
+                globalChannelX += channelColWidth;
+            });
+            svgContent += `<text x="${globalChannelX + (totalColWidth / 2)}" y="${currentY + (footerHeight/2) + 7}" text-anchor="middle" font-size="${baseFontSize+2}" font-weight="700" fill="#0146bc">${data.totalPosts}</text>`;
+            
+            return `<svg width="${width}" height="${totalHeight}" viewBox="0 0 ${width} ${totalHeight}" xmlns="http://www.w3.org/2000/svg" style="font-family: 'Nunito Sans', sans-serif;">
+                        <rect x="0" y="0" width="${width}" height="${totalHeight}" fill="transparent"/>
+                        ${svgContent}
+                    </svg>`;
+        }
+
+        async function downloadAllSVG(processedData) {
+            const button = document.getElementById('download-all-btn');
+            const originalText = button.innerHTML;
+            button.innerHTML = 'Creazione zip in corso...';
+            button.disabled = true;
+
+            const zip = new JSZip();
+            for (const label in processedData) {
+                const svgString = generateSVG(label, processedData[label]);
+                const fileName = `riepilogo_${label.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.svg`;
+                zip.file(fileName, svgString);
+            }
+
+            try {
+                const content = await zip.generateAsync({ type: "blob" });
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'report_social.zip';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error("Errore durante la creazione dello zip:", error);
+                alert("Si è verificato un errore durante la creazione del file zip.");
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+
+        function downloadSVG(svgString, fileName) {
+            const blob = new Blob([svgString], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `riepilogo_${fileName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.svg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+    </script>
+</body>
+</html>
+
