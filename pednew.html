@@ -100,7 +100,7 @@
                         </div>
                         <div>
                             <label for="line-height-input" class="block text-sm font-medium text-gray-700">Interlinea (px)</label>
-                            <input type="number" id="line-height-input" value="28" min="20" max="50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <input type="number" id="line-height-input" value="23" min="20" max="50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                         </div>
                     </div>
 
@@ -415,6 +415,8 @@
             const footerHeight = baseFontSize + 30;
             const paddingY = 25;
             const darkTextColor = '#101827';
+            
+            const titleLineWidth = 500; 
             // --- FINE CONFIGURAZIONE LAYOUT ---
 
             const sortedArgomenti = Object.entries(data.argomenti).sort(([, a], [, b]) => {
@@ -428,11 +430,13 @@
 
             let currentY = paddingY;
             
-            let svgContent = `<text x="${paddingX}" y="${currentY + 25}" font-size="${baseFontSize + 10}" font-weight="700" fill="#0146bc" text-transform="uppercase">${escapeXML(label)}</text>`;
+            // CORRETTO: Titolo in maiuscolo via JS, non solo CSS
+            let svgContent = `<text x="${paddingX}" y="${currentY + 20}" font-size="${baseFontSize + 4}" font-weight="700" fill="#0146bc" text-transform="uppercase">${escapeXML(label.toUpperCase())}</text>`;
+            svgContent += `<line x1="${paddingX}" y1="${currentY + 32}" x2="${paddingX + titleLineWidth}" y2="${currentY + 32}" stroke="#0146bc" stroke-width="1.5"/>`;
             currentY += headerHeight;
 
             let tableHeader = `<rect x="${paddingX}" y="${currentY}" width="${width - (2 * paddingX)}" height="${tableHeaderHeight}" fill="#f8f9fa" />
-                               <text x="${paddingX + 20}" y="${currentY + (tableHeaderHeight/2) + 6}" font-size="${baseFontSize + 2}" font-weight="600" fill="${darkTextColor}">Argomento</text>`;
+                               <text x="${paddingX + 20}" y="${currentY + (tableHeaderHeight/2) + 6}" font-size="${baseFontSize + 2}" font-weight="400" fill="#0146bc">Argomento</text>`;
             
             let channelHeaderX = paddingX + argColWidth;
             CHANNELS_ORDER.forEach(channelName => {
@@ -446,7 +450,7 @@
             sortedArgomenti.forEach(([argomento, details], index) => {
                 const rowY = currentY + (index * rowHeight);
                 
-                svgContent += `<line x1="${paddingX}" y1="${rowY + rowHeight}" x2="${width - paddingX}" y2="${rowY + rowHeight}" stroke="#eff2f5" stroke-width="1.5"/>`;
+                svgContent += `<line x1="${paddingX}" y1="${rowY + rowHeight}" x2="${width - paddingX}" y2="${rowY + rowHeight}" stroke="#e2e8f0" stroke-width="1.5"/>`;
                 
                 const maxArgLength = 85;
                 const truncatedArgomento = argomento.length > maxArgLength ? argomento.substring(0, maxArgLength) + '...' : argomento;
@@ -541,4 +545,5 @@
     </script>
 </body>
 </html>
+
 
