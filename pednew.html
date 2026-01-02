@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generatore Report Social - Advanced</title>
+    <title>Generatore Report Social - Advanced (Con Ordinamento)</title>
     <link rel="icon" href="favicon.ico">
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -126,6 +128,13 @@
             display: flex; flex-direction: column;
             box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
         }
+
+        /* --- STILI PER DRAG & DROP --- */
+        .cursor-move { cursor: grab; }
+        .cursor-move:active { cursor: grabbing; }
+        .sortable-ghost { opacity: 0.4; background-color: #e2e8f0; border: 2px dashed #cbd5e1; }
+        .drag-handle { touch-action: none; cursor: grab; }
+        .drag-handle:active { cursor: grabbing; }
     </style>
 </head>
 <body class="antialiased text-gray-800">
@@ -204,12 +213,15 @@
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">Modifica Testi: <span id="modal-label-title" class="text-blue-700"></span></h3>
+                <h3 class="text-xl font-bold text-gray-800">Modifica e Ordina: <span id="modal-label-title" class="text-blue-700"></span></h3>
                 <button onclick="closeModal()" class="text-gray-500 hover:text-red-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
-            <div id="modal-body" class="flex-1 overflow-y-auto pr-2 space-y-4">
+            <p class="text-sm text-gray-500 mb-3 bg-blue-50 p-2 rounded">
+                <span class="font-bold">Info:</span> Trascina l'icona <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline text-gray-500"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><circle cx="4" cy="6" r="1"></circle><circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="18" r="1"></circle></svg> a sinistra per riordinare le righe.
+            </p>
+            <div id="modal-body" class="flex-1 overflow-y-auto pr-2 space-y-2">
                 </div>
             <div class="mt-6 pt-4 border-t flex justify-end gap-3">
                 <button onclick="closeModal()" class="px-4 py-2 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg">Annulla</button>
@@ -248,6 +260,7 @@
         // VARIABILI GLOBALI PER LO STATO
         let globalProcessedData = {};
         let currentEditLabel = null;
+        let sortableInstance = null; // Istanza del drag & drop
 
         const uploadForm = document.getElementById('upload-form');
         const fileInput = document.getElementById('file-upload');
@@ -430,7 +443,8 @@
                         channels: { Facebook: 0, Linkedin: 0, Instagram: 0, X: 0, Youtube: 0, Whatsapp: 0 },
                         totalPosts: 0,
                         isIstituzionale: false,
-                        displayText: argomento // NUOVO CAMPO EDITABILE
+                        displayText: argomento, // NUOVO CAMPO EDITABILE
+                        customIndex: undefined // NUOVO CAMPO PER ORDINAMENTO
                     };
                 }
                 
@@ -545,7 +559,7 @@
                 buttonsContainer.innerHTML = `
                     <button class="btn-outline py-2 px-6 rounded-full" onclick="openEditModal('${label}')">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        Modifica Testi
+                        Modifica & Ordina
                     </button>
                     <button class="btn-secondary py-2 px-6 rounded-full" onclick="downloadSingle('${label}')">
                         Scarica SVG
@@ -572,7 +586,7 @@
             });
         }
         
-        // MODAL LOGIC
+        // --- MODAL & SORTING LOGIC ---
         function openEditModal(label) {
             currentEditLabel = label;
             modalLabelTitle.textContent = label;
@@ -583,22 +597,43 @@
             const sortedArgomenti = getSortedEntries(data);
 
             sortedArgomenti.forEach(([key, details]) => {
+                // Creazione riga modale
                 const row = document.createElement('div');
-                row.className = 'p-3 bg-gray-50 rounded border border-gray-200';
+                row.className = 'modal-row flex items-center gap-3 p-3 bg-white rounded border border-gray-200 shadow-sm transition-colors hover:border-blue-300 group';
                 
+                // Icona Maniglia (Drag Handle)
+                const handle = document.createElement('div');
+                handle.className = 'drag-handle cursor-move text-gray-400 hover:text-gray-600 p-1';
+                handle.title = "Trascina per riordinare";
+                handle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><circle cx="4" cy="6" r="1"></circle><circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="18" r="1"></circle></svg>`;
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'flex-1';
+
                 const labelSmall = document.createElement('div');
                 labelSmall.className = 'text-xs text-gray-500 font-mono mb-1 truncate';
                 labelSmall.textContent = `Originale: "${key}"`;
                 
                 const input = document.createElement('input');
                 input.type = 'text';
-                input.className = 'w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none';
+                input.className = 'w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-semibold text-gray-700';
                 input.value = details.displayText || key;
                 input.dataset.key = key; // Per recuperare quale stiamo modificando
 
-                row.appendChild(labelSmall);
-                row.appendChild(input);
+                contentDiv.appendChild(labelSmall);
+                contentDiv.appendChild(input);
+
+                row.appendChild(handle);
+                row.appendChild(contentDiv);
                 modalBody.appendChild(row);
+            });
+
+            // Inizializza SortableJS
+            if(sortableInstance) sortableInstance.destroy();
+            sortableInstance = new Sortable(modalBody, {
+                animation: 150,
+                handle: '.drag-handle', // Si trascina solo dall'icona
+                ghostClass: 'sortable-ghost'
             });
 
             editModal.classList.add('active');
@@ -612,13 +647,19 @@
         saveEditsBtn.addEventListener('click', () => {
             if(!currentEditLabel) return;
             
-            // 1. Aggiorna i dati globali
-            const inputs = modalBody.querySelectorAll('input');
-            inputs.forEach(input => {
+            // 1. Recupera righe dall'ordine DOM attuale (dopo il drag & drop)
+            const rows = modalBody.querySelectorAll('.modal-row');
+            
+            rows.forEach((row, index) => {
+                const input = row.querySelector('input');
                 const key = input.dataset.key;
                 const newVal = input.value;
+                
                 if(globalProcessedData[currentEditLabel].argomenti[key]) {
+                    // Salva testo
                     globalProcessedData[currentEditLabel].argomenti[key].displayText = newVal;
+                    // Salva ordine personalizzato
+                    globalProcessedData[currentEditLabel].argomenti[key].customIndex = index;
                 }
             });
 
@@ -658,9 +699,23 @@
             });
         }
         
-        // Helper per ordinamento (usato sia nel render che nel modal)
+        // Helper per ordinamento (Aggiornata per supportare customIndex)
         function getSortedEntries(data) {
-             const getPriority = (argomento) => {
+            const entries = Object.entries(data.argomenti);
+            
+            // Controlliamo se è stato impostato un ordine personalizzato
+            const hasCustomOrder = entries.some(([_, val]) => val.customIndex !== undefined);
+
+            if (hasCustomOrder) {
+                return entries.sort((a, b) => {
+                    const idxA = a[1].customIndex !== undefined ? a[1].customIndex : 99999;
+                    const idxB = b[1].customIndex !== undefined ? b[1].customIndex : 99999;
+                    return idxA - idxB;
+                });
+            }
+
+            // --- Logica Standard (Fallback) ---
+            const getPriority = (argomento) => {
                 const argLower = (argomento || "").toLowerCase();
                 if (argLower.includes("lasco")) return 0;
                 if (argLower.includes("del fante")) return 1;
@@ -668,7 +723,7 @@
                 return 3; 
             };
 
-            return Object.entries(data.argomenti).sort(([argA, detailsA], [argB, detailsB]) => {
+            return entries.sort(([argA, detailsA], [argB, detailsB]) => {
                 if (detailsA.isIstituzionale && !detailsB.isIstituzionale) return -1;
                 if (!detailsA.isIstituzionale && detailsB.isIstituzionale) return 1;
                 if (!detailsA.isIstituzionale) return detailsB.totalPosts - detailsA.totalPosts;
@@ -698,6 +753,7 @@
             const darkTextColor = '#101827';
             const blueColor = '#0146bc';
             
+            // Utilizza l'helper aggiornato per l'ordine
             const sortedArgomenti = getSortedEntries(data);
 
             const numArgomenti = sortedArgomenti.length;
@@ -769,7 +825,7 @@
                 // USARE displayText INVECE DELLA CHIAVE
                 const textToShow = details.displayText || key;
 
-                // Troncamento visivo per sicurezza nel SVG (anche se modificabile)
+                // Troncamento visivo per sicurezza nel SVG
                 const maxArgLength = 95; 
                 const truncatedArgomento = textToShow.length > maxArgLength ? textToShow.substring(0, maxArgLength) + '...' : textToShow;
                 
